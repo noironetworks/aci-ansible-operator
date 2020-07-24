@@ -1,0 +1,7 @@
+apiVersion: aci.aw/v1
+kind: Epg
+metadata:
+  name: example-epg
+spec:
+  # Add fields here
+  size: 3
