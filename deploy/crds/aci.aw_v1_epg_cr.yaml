@@ -1,7 +1,18 @@
 apiVersion: aci.aw/v1
 kind: Epg
 metadata:
-  name: example-epg
+  name: epg1
+  namespace: aci-containers-system
 spec:
-  # Add fields here
-  size: 3
+  epg_contract_masters:
+  - aci-containers-default
+  - aci-containers-system
+  #epg_contract_masters: []
+  provided_contracts:
+  - p1
+  - p2
+  #provided_contracts: []
+  consumed_contracts:
+  - c1
+  - c2
+  #consumed_contracts: []

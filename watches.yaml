@@ -2,4 +2,12 @@
 - version: v1
   group: aci.aw
   kind: Epg
-  playbook: playbook.yml
+  playbook: /opt/ansible/playbooks/epg-playbook.yaml
+  reconcilePeriod: 10s
+  vars:
+    state: present
+  finalizer:
+    name: finalizer.epg.aci.aw
+    vars:
+      state: absent
+
