@@ -71,6 +71,7 @@ rules:
   - aci.aw
   resources:
   - '*'
+  - contracts
   verbs:
   - create
   - delete
