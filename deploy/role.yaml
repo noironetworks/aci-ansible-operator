@@ -3,6 +3,7 @@ kind: Role
 metadata:
   creationTimestamp: null
   name: aci-ansible-operator
+  namespace: aci-containers-system
 rules:
 - apiGroups:
   - ""

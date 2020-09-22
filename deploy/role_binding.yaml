@@ -2,9 +2,11 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: aci-ansible-operator
+  namespace: aci-containers-system
 subjects:
 - kind: ServiceAccount
   name: aci-ansible-operator
+  namespace: aci-containers-system
 roleRef:
   kind: Role
   name: aci-ansible-operator
