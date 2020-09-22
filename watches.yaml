@@ -11,3 +11,14 @@
     vars:
       state: absent
 
+- version: v1
+  group: aci.aw
+  kind: Contract
+  playbook: /opt/ansible/playbooks/contract-playbook.yaml
+  reconcilePeriod: 10s
+  vars:
+    state: present
+  finalizer:
+    name: finalizer.contract.aci.aw
+    vars:
+      state: absent
