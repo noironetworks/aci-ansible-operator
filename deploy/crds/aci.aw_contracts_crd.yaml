@@ -34,9 +34,9 @@ spec:
                   protocol:
                     type: string
                     enum:
-                      - icmp
-                      - tcp
-                      - udp
+                    - icmp
+                    - tcp
+                    - udp
                   ports:
                     type: object
                     properties:
@@ -51,4 +51,4 @@ spec:
                         minimum: 1
                         type: integer
           required:
-            - allow_list
+          - allow_list
