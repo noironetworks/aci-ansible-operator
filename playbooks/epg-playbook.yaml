@@ -1,5 +1,5 @@
 ---
-- name: ACI ansible operator EPG Playbook 
+- name: ACI ansible operator EPG Playbook
   connection: local
   hosts: localhost
   vars:
@@ -58,7 +58,6 @@
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
     when: query_result.current[0].fvAEPg.children is defined
   - name: Delete the extra provided contracts to EPG
-    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined)
     ignore_errors: yes
     aci_epg_to_contract:
       ap: '{{ ap }}'
@@ -75,7 +74,7 @@
       contract: '{{ item.fvRsProv.attributes.tnVzBrCPName }}'
       contract_type: provider
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
-    when: item.fvRsProv.attributes.tnVzBrCPName not in providedContracts
+    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined) and (item.fvRsProv.attributes.tnVzBrCPName not in providedContracts)
   - name: Add provided contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
@@ -117,7 +116,6 @@
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
     when: query_result.current[0].fvAEPg.children is defined
   - name: Delete the extra consumed contracts to EPG
-    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined)
     ignore_errors: yes
     aci_epg_to_contract:
       ap: '{{ ap }}'
@@ -134,7 +132,7 @@
       contract: '{{ item.fvRsCons.attributes.tnVzBrCPName }}'
       contract_type: consumer
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
-    when: item.fvRsCons.attributes.tnVzBrCPName not in consumedContracts
+    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined) and (item.fvRsCons.attributes.tnVzBrCPName not in consumedContracts)
   - name: Add consumed contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
@@ -180,7 +178,6 @@
       masterEpgPaths: "{{ masterEpgPaths|default([]) + ['-'.join((masterEpgPathPrefix, item)) + ']'] }}"
     with_items: "{{ masterEpgs }}"
   - name: Delete Master EPG
-    when: (desiredState == 'present') and (query_result.imdata is defined)
     ignore_errors: yes
     vars:
       epgPath: 'uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epgName }}'
@@ -194,7 +191,7 @@
       validate_certs: no
       path: '/api/node/mo/{{ item.fvRsSecInherited.attributes.dn }}.json'
     with_items: '{{ query_result.imdata }}'
-    when: (epgPath in item.fvRsSecInherited.attributes.dn) and (item.fvRsSecInherited.attributes.dn not in masterEpgPaths)
+    when: (desiredState == 'present') and (query_result.imdata is defined) and (epgPath in item.fvRsSecInherited.attributes.dn) and (item.fvRsSecInherited.attributes.dn not in masterEpgPaths)
   - name: Attach Master EPG
     when: (desiredState == 'present')
     ignore_errors: yes
@@ -208,7 +205,7 @@
       validate_certs: no
       path: /api/node/mo/uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epgName }}.json
       content:
-         {
+        {
           "fvRsSecInherited": {
             "attributes": {
               "tDn": "uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ item }}",
@@ -216,7 +213,7 @@
             },
             "children": []
           }
-         }
+        }
     loop: '{{ masterEpgs }}'
   - name: Bind EPG to VMM Domain
     when: desiredState == 'present'
@@ -235,4 +232,3 @@
       use_ssl: yes
       validate_certs: no
       vm_provider: '{{ vmProvider }}'
-
