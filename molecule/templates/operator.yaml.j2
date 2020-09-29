@@ -13,6 +13,17 @@ spec:
       labels:
         name: aci-ansible-operator
     spec:
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/master
+                operator: Exists
       serviceAccountName: aci-ansible-operator
       containers:
         - name: aci-ansible-operator
@@ -22,6 +33,10 @@ spec:
           volumeMounts:
           - mountPath: /tmp/ansible-operator/runner
             name: runner
+          - mountPath: /usr/local/etc/aci-cert/
+            name: aci-user-cert-volume
+          - name: aci-containers-config-volume
+            mountPath: /opt/ansible/aci-containers-config/
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
@@ -45,3 +60,10 @@ spec:
       volumes:
         - name: runner
           emptyDir: {}
+        - name: aci-containers-config-volume
+          configMap:
+            name: aci-containers-config
+        - name: aci-user-cert-volume
+          secret:
+            defaultMode: 420
+            secretName: aci-user-cert

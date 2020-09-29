@@ -3,32 +3,41 @@
   hosts: localhost
   connection: local
   gather_facts: false
-  no_log: "{{ molecule_no_log }}"
+  #no_log: "{{ molecule_no_log }}"
   collections:
     - community.kubernetes
 
   tasks:
-    - name: Delete namespace
+    - name: Delete Epg Custom Resource Definition
       k8s:
-        api_version: v1
-        kind: Namespace
-        name: '{{ namespace }}'
+        definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/aci.aw_epgs_crd.yaml'])) }}"
         state: absent
         wait: yes
 
-    - name: Delete RBAC resources
+    - name: Delete Contract Custom Resource Definition
+      k8s:
+        definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/aci.aw_contracts_crd.yaml'])) }}"
+        state: absent
+        wait: yes
+
+    - name: Delete RBAC resources and the operator itself
       k8s:
         definition: "{{ lookup('template', '/'.join([deploy_dir, item])) }}"
         namespace: '{{ namespace }}'
         state: absent
         wait: yes
       with_items:
+        - operator.yaml
         - role.yaml
         - role_binding.yaml
         - service_account.yaml
 
-    - name: Delete Custom Resource Definition
+    - name: Do Not Delete namespace
       k8s:
-        definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/aci.aw_epgs_crd.yaml'])) }}"
-        state: absent
+        api_version: v1
+        kind: Namespace
+        name: '{{ namespace }}'
+        # We have to use aci-containers-system namespace for the UTs
+        # so don't delete it as other resources also depend on it.
+        state: present
         wait: yes

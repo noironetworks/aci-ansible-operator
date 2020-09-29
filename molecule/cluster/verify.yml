@@ -8,14 +8,27 @@
     - community.kubernetes
 
   vars:
-    custom_resource: "{{ lookup('template', '/'.join([deploy_dir, 'crds/aci.aw_v1_epg_cr.yaml'])) | from_yaml }}"
+    epg_custom_resource: "{{ lookup('template', '/'.join([deploy_dir, 'crds/aci.aw_v1_epg_cr.yaml'])) | from_yaml }}"
+    contract_custom_resource: "{{ lookup('template', '/'.join([deploy_dir, 'crds/aci.aw_v1_contract_cr.yaml'])) | from_yaml }}"
 
   tasks:
     - name: Create the aci.aw/v1.Epg and wait for reconciliation to complete
       k8s:
         state: present
         namespace: '{{ namespace }}'
-        definition: '{{ custom_resource }}'
+        definition: '{{ epg_custom_resource }}'
+        wait: yes
+        wait_timeout: 300
+        wait_condition:
+          type: Running
+          reason: Successful
+          status: "True"
+
+    - name: Create the aci.aw/v1.Contract and wait for reconciliation to complete
+      k8s:
+        state: present
+        namespace: '{{ namespace }}'
+        definition: '{{ contract_custom_resource }}'
         wait: yes
         wait_timeout: 300
         wait_condition:
