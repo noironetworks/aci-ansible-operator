@@ -15,6 +15,10 @@
       k8s:
         definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/aci.aw_epgs_crd.yaml'])) }}"
 
+    - name: Create Contract Custom Resource Definition
+      k8s:
+        definition: "{{ lookup('file', '/'.join([deploy_dir, 'crds/aci.aw_contracts_crd.yaml'])) }}"
+
     - name: Create namespace
       k8s:
         api_version: v1
