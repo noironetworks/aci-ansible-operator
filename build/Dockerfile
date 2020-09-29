@@ -8,6 +8,7 @@ ENV https_proxy=http://proxy.esl.cisco.com:80
 RUN update-crypto-policies --set LEGACY && pip3 install pyopenssl
 USER 1001
 RUN ansible-galaxy collection install -r ${HOME}/requirements.yml && chmod -R ug+rwx ${HOME}/.ansible
+RUN ansible-galaxy collection install cisco.aci --force
 ENV http_proxy=''
 ENV https_proxy=''
 

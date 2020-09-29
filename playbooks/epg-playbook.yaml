@@ -151,7 +151,7 @@
       contract: '{{ item }}'
       contract_type: consumer
     loop: '{{ consumedContracts }}'
-  - name: Query Master EPG
+  - name: Query Master EPGs
     when: desiredState == 'present'
     ignore_errors: yes
     aci_rest:
@@ -165,70 +165,59 @@
       path: /api/node/class/fvRsSecInherited.json
     register: query_result
   - debug:
-      msg: '/api/node/mo/{{ item.fvRsSecInherited.attributes.dn }}.json'
+      msg: '{{ item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] }}'
     with_items: '{{ query_result.imdata }}'
     when: query_result.imdata is defined
-  - name: Set the default masterEpgPath list
-    set_fact:
-      masterEpgPaths: []
-  - name: Set the masterEpgPath list
-    vars:
-      masterEpgPathPrefix: 'uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epgName }}/rssecInherited-[uni/tn-{{ tenant }}/ap-{{ ap }}/epg'
-    set_fact:
-      masterEpgPaths: "{{ masterEpgPaths|default([]) + ['-'.join((masterEpgPathPrefix, item)) + ']'] }}"
-    with_items: "{{ masterEpgs }}"
-  - name: Delete Master EPG
-    ignore_errors: yes
+  - name: Delete extra Master EPGs
     vars:
       epgPath: 'uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epgName }}'
-    aci_rest:
+    cisco.aci.aci_epg_to_contract_master:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
       username: '{{ user }}'
-      method: delete
+      tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract_master_ap: '{{ ap }}'
+      contract_master_epg: '{{  item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] }}'
+      state: absent
+      use_proxy: no
       use_ssl: yes
       validate_certs: no
-      path: '/api/node/mo/{{ item.fvRsSecInherited.attributes.dn }}.json'
     with_items: '{{ query_result.imdata }}'
-    when: (desiredState == 'present') and (query_result.imdata is defined) and (epgPath in item.fvRsSecInherited.attributes.dn) and (item.fvRsSecInherited.attributes.dn not in masterEpgPaths)
-  - name: Attach Master EPG
+    when: (desiredState == 'present') and (query_result.imdata is defined) and (epgPath in item.fvRsSecInherited.attributes.dn) and (item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] not in masterEpgs)
+  - name: Attach Master EPGs
     when: (desiredState == 'present')
-    ignore_errors: yes
-    aci_rest:
+    cisco.aci.aci_epg_to_contract_master:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
       username: '{{ user }}'
-      method: post
+      tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract_master_ap: '{{ ap }}'
+      contract_master_epg: '{{ item }}'
+      state: present
+      use_proxy: no
       use_ssl: yes
       validate_certs: no
-      path: /api/node/mo/uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epgName }}.json
-      content:
-        {
-          "fvRsSecInherited": {
-            "attributes": {
-              "tDn": "uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ item }}",
-              "status": "created"
-            },
-            "children": []
-          }
-        }
     loop: '{{ masterEpgs }}'
   - name: Bind EPG to VMM Domain
     when: desiredState == 'present'
     aci_epg_to_domain:
-      ap: '{{ ap }}'
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
       username: '{{ user }}'
+      vm_provider: '{{ vmProvider }}'
       domain: '{{ vmmDomain }}'
       domain_type: vmm
+      tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
       epg: '{{ epgName }}'
       state: present
-      tenant: '{{ tenant }}'
       use_proxy: no
       use_ssl: yes
       validate_certs: no
-      vm_provider: '{{ vmProvider }}'
