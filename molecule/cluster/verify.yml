@@ -11,7 +11,39 @@
     epg_custom_resource: "{{ lookup('template', '/'.join([deploy_dir, 'crds/aci.aw_v1_epg_cr.yaml'])) | from_yaml }}"
     contract_custom_resource: "{{ lookup('template', '/'.join([deploy_dir, 'crds/aci.aw_v1_contract_cr.yaml'])) | from_yaml }}"
 
+    jsonVar: "{{ lookup('file', '/'.join([cluster_dir, 'controller-config'])) | from_json }}"
+    user: admin
+    passwd: noir0123
+    prefix: "{{ jsonVar['aci-prefix'] }}"
+    tenant: "{{ jsonVar['aci-policy-tenant'] }}"
+    ap: 'aci-containers-{{ prefix }}'
+    apicHosts: "{{ jsonVar['apic-hosts'] }}"
+    apicHost: "{{ apicHosts | random }}"
   tasks:
+    - debug:
+        msg: "EPG name: {{ epg_custom_resource.metadata.name }}, Contract name: {{ contract_custom_resource.metadata.name }}"
+
+    - name: query the non-existent EPG
+      aci_epg:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        ap: '{{ ap }}'
+        epg: '{{ epg_custom_resource.metadata.name }}'
+        use_ssl: yes
+        validate_certs: no
+        use_proxy: no
+        state: query
+      register: query_result
+    - name: EPG assertion
+      assert:
+        # This should be used for a test running from scratch
+        that: query_result.current == []
+        # This line should be used if the setup has been brought
+        # up and you just want to do 'molecule verify' repeatedly.
+        #that: query_result.current != []
+
     - name: Create the aci.aw/v1.Epg and wait for reconciliation to complete
       k8s:
         state: present
@@ -24,6 +56,113 @@
           reason: Successful
           status: "True"
 
+    - name: Query all the provided contracts to EPG
+      aci_epg_to_contract:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        ap: '{{ ap }}'
+        epg: '{{ epg_custom_resource.metadata.name }}'
+        contract_type: provider
+        state: query
+        output_level: info
+        use_proxy: no
+        use_ssl: yes
+        validate_certs: no
+      register: query_result
+    - debug:
+        msg: 'Provider contract: {{ item.fvRsProv.attributes.tnVzBrCPName }}'
+      with_items: '{{ query_result.current[0].fvAEPg.children }}'
+      when: query_result.current[0].fvAEPg.children is defined
+    - name: Set the contract list
+      set_fact:
+        pContractList: "{{ pContractList|default([]) + [item.fvRsProv.attributes.tnVzBrCPName] }}"
+      with_items: "{{ query_result.current[0].fvAEPg.children }}"
+      when: query_result.current[0].fvAEPg.children is defined
+    - debug:
+        msg: 'pContract list: {{ pContractList }}'
+    - name: Contract assertion
+      assert:
+        that: pContractList | sort == epg_custom_resource.spec.provided_contracts | sort
+
+    - name: Query all the consumed contracts to EPG
+      aci_epg_to_contract:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        ap: '{{ ap }}'
+        epg: '{{ epg_custom_resource.metadata.name }}'
+        contract_type: consumer
+        state: query
+        output_level: info
+        use_proxy: no
+        use_ssl: yes
+        validate_certs: no
+      register: query_result
+    - debug:
+        msg: 'Consumer contract: {{ item.fvRsCons.attributes.tnVzBrCPName }}'
+      with_items: '{{ query_result.current[0].fvAEPg.children }}'
+      when: query_result.current[0].fvAEPg.children is defined
+    - name: Set the contract list
+      set_fact:
+        cContractList: "{{ cContractList|default([]) + [item.fvRsCons.attributes.tnVzBrCPName] }}"
+      with_items: "{{ query_result.current[0].fvAEPg.children }}"
+      when: query_result.current[0].fvAEPg.children is defined
+    - debug:
+        msg: 'cContract list: {{ cContractList }}'
+    - name: Contract assertion
+      assert:
+        that: cContractList | sort == epg_custom_resource.spec.consumed_contracts | sort
+
+    - name: Query Master EPGs
+      aci_rest:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        method: get
+        use_ssl: yes
+        validate_certs: no
+        path: /api/node/class/fvRsSecInherited.json
+      register: query_result
+    - debug:
+        msg: 'master EPG: {{ item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] }}'
+      with_items: '{{ query_result.imdata }}'
+      when: query_result.imdata is defined
+    - name: Set the master EPGs list
+      vars:
+        epgPath: 'uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epg_custom_resource.metadata.name }}'
+      set_fact:
+        contractMasterList: "{{ contractMasterList|default([]) + [item.fvRsSecInherited.attributes.tDn.split('/')[-1][4:]] }}"
+      with_items: "{{ query_result.imdata }}"
+      when: (query_result.imdata is defined) and (epgPath in item.fvRsSecInherited.attributes.dn)
+    - debug:
+        msg: 'master EPG list: {{ contractMasterList }}'
+    - name: master EPGs assertion
+      assert:
+        that: contractMasterList | sort == epg_custom_resource.spec.epg_contract_masters | sort
+
+    - name: query the non-existent contract
+      aci_contract:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        contract: '{{ contract_custom_resource.metadata.name }}'
+        use_ssl: yes
+        validate_certs: no
+        use_proxy: no
+        state: query
+      register: query_result
+    - name: Contract assertion
+      assert:
+        # This should be used for a test running from scratch
+        that: query_result.current == []
+        # This line should be used if the setup has been brought
+        # up and you just want to do 'molecule verify' repeatedly.
+        #that: query_result.current != []
+
     - name: Create the aci.aw/v1.Contract and wait for reconciliation to complete
       k8s:
         state: present
@@ -35,6 +174,52 @@
           type: Running
           reason: Successful
           status: "True"
+
+    - name: Query contract entries
+      aci_filter_entry:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        filter: '{{ contract_custom_resource.metadata.name }}-default'
+        state: query
+        output_level: info
+        use_proxy: no
+        use_ssl: yes
+        validate_certs: no
+      register: query_result
+    - debug:
+        msg: 'Entry: {{ item.vzEntry.attributes.name }}'
+      with_items: "{{ query_result.current[0].vzFilter.children }}"
+      when: query_result.current[0].vzFilter.children is defined
+    - name: Set the default entry list
+      set_fact:
+        entryList: []
+    - name: Set the entry list
+      set_fact:
+        entryList: "{{ entryList + [item.vzEntry.attributes.name] }}"
+      with_items: "{{ query_result.current[0].vzFilter.children }}"
+      when: query_result.current[0].vzFilter.children is defined
+    - debug:
+        msg: 'entry list: {{ entryList }}'
+    - name: Set the default CRD entry list
+      set_fact:
+        crdEntryList: []
+    - name: Set the tcp/udp CRD entry list
+      set_fact:
+        crdEntryList: "{{ crdEntryList + ['-'.join((item.protocol, item.ports.start|string(), item.ports.end|string()))] }}"
+      with_items: "{{ contract_custom_resource.spec.allow_list }}"
+      when: (contract_custom_resource.spec.allow_list is defined) and (item.ports is defined)
+    - name: Set the icmp CRD entry list
+      set_fact:
+        crdEntryList: "{{ crdEntryList + ['-'.join((item.protocol, 'unspecified', 'unspecified'))] }}"
+      with_items: "{{ contract_custom_resource.spec.allow_list }}"
+      when: (contract_custom_resource.spec.allow_list is defined) and (item.ports is not defined)
+    - debug:
+        msg: 'CRD entry list: {{ crdEntryList }}'
+    - name: Entry list assertion
+      assert:
+        that: crdEntryList | sort == entryList | sort
 
     - name: Get Pods
       k8s_info:

@@ -39,19 +39,19 @@
     when: desiredState == 'present'
     ignore_errors: yes
     aci_epg_to_contract:
-      ap: '{{ ap }}'
       host: '{{ apicHost }}'
+      username: '{{ user }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
-      username: '{{ user }}'
+      tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
       epg: '{{ epgName }}'
+      contract_type: provider
       state: query
       output_level: info
-      tenant: '{{ tenant }}'
       use_proxy: no
       use_ssl: yes
       validate_certs: no
-      contract_type: provider
     register: query_result
   - debug:
       msg: 'Provider contract name {{ item.fvRsProv.attributes.tnVzBrCPName }}'
@@ -60,56 +60,56 @@
   - name: Delete the extra provided contracts to EPG
     ignore_errors: yes
     aci_epg_to_contract:
-      ap: '{{ ap }}'
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
       username: '{{ user }}'
-      epg: '{{ epgName }}'
-      state: absent
       tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract_type: provider
+      contract: '{{ item.fvRsProv.attributes.tnVzBrCPName }}'
+      state: absent
       use_proxy: no
       use_ssl: yes
       validate_certs: no
-      contract: '{{ item.fvRsProv.attributes.tnVzBrCPName }}'
-      contract_type: provider
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
     when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined) and (item.fvRsProv.attributes.tnVzBrCPName not in providedContracts)
   - name: Add provided contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
     aci_epg_to_contract:
-      ap: '{{ ap }}'
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
       username: '{{ user }}'
-      epg: '{{ epgName }}'
-      state: present
       tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract: '{{ item }}'
+      contract_type: provider
+      state: present
       use_proxy: no
       use_ssl: yes
       validate_certs: no
-      contract: '{{ item }}'
-      contract_type: provider
     loop: '{{ providedContracts }}'
   - name: Query all the consumed contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
     aci_epg_to_contract:
-      ap: '{{ ap }}'
       host: '{{ apicHost }}'
+      username: '{{ user }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
-      username: '{{ user }}'
+      tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
       epg: '{{ epgName }}'
+      contract_type: consumer
       state: query
       output_level: info
-      tenant: '{{ tenant }}'
       use_proxy: no
       use_ssl: yes
       validate_certs: no
-      contract_type: consumer
     register: query_result
   - debug:
       msg: 'Consumer contract name {{ item.fvRsCons.attributes.tnVzBrCPName }}'
@@ -118,47 +118,47 @@
   - name: Delete the extra consumed contracts to EPG
     ignore_errors: yes
     aci_epg_to_contract:
-      ap: '{{ ap }}'
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
       username: '{{ user }}'
-      epg: '{{ epgName }}'
-      state: absent
       tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract: '{{ item.fvRsCons.attributes.tnVzBrCPName }}'
+      contract_type: consumer
+      state: absent
       use_proxy: no
       use_ssl: yes
       validate_certs: no
-      contract: '{{ item.fvRsCons.attributes.tnVzBrCPName }}'
-      contract_type: consumer
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
     when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined) and (item.fvRsCons.attributes.tnVzBrCPName not in consumedContracts)
   - name: Add consumed contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
     aci_epg_to_contract:
-      ap: '{{ ap }}'
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
       username: '{{ user }}'
-      epg: '{{ epgName }}'
-      state: present
       tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract: '{{ item }}'
+      contract_type: consumer
+      state: present
       use_proxy: no
       use_ssl: yes
       validate_certs: no
-      contract: '{{ item }}'
-      contract_type: consumer
     loop: '{{ consumedContracts }}'
   - name: Query Master EPGs
     when: desiredState == 'present'
     ignore_errors: yes
     aci_rest:
       host: '{{ apicHost }}'
+      username: '{{ user }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ tenant }}.crt'
-      username: '{{ user }}'
       method: get
       use_ssl: yes
       validate_certs: no
@@ -180,7 +180,7 @@
       ap: '{{ ap }}'
       epg: '{{ epgName }}'
       contract_master_ap: '{{ ap }}'
-      contract_master_epg: '{{  item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] }}'
+      contract_master_epg: '{{ item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] }}'
       state: absent
       use_proxy: no
       use_ssl: yes

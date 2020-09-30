@@ -24,6 +24,7 @@ provisioner:
         ansible_python_interpreter: '{{ ansible_playbook_python }}'
         deploy_dir: ${MOLECULE_PROJECT_DIRECTORY}/deploy
         template_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/templates
+        cluster_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/cluster
         # TBD: use the official repo
         operator_image: ${OPERATOR_IMAGE:-"kentwu111/aci-ansible-operator:v1"}
         operator_pull_policy: ${OPERATOR_PULL_POLICY:-"Always"}
