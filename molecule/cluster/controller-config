@@ -1,0 +1,80 @@
+{
+    "log-level": "debug",
+    "apic-hosts": [
+        "10.30.120.180"
+    ],
+    "apic-username": "kent_cluster",
+    "apic-private-key-path": "/usr/local/etc/aci-cert/user.key",
+    "apic-use-inst-tag": true,
+    "aci-prefix": "kent_cluster",
+    "aci-vmm-type": "Kubernetes",
+    "aci-vmm-domain": "kent_cluster",
+    "aci-vmm-controller": "kent_cluster",
+    "aci-policy-tenant": "kent_cluster",
+    "require-netpol-annot": false,
+    "install-istio": true,
+    "istio-profile": "demo",
+    "aci-podbd-dn": "uni/tn-kent_cluster/BD-aci-containers-kent_cluster-pod-bd",
+    "aci-nodebd-dn": "uni/tn-kent_cluster/BD-aci-containers-kent_cluster-node-bd",
+    "aci-service-phys-dom": "kent_cluster-pdom",
+    "aci-service-encap": "vlan-42",
+    "aci-service-monitor-interval": 5,
+    "aci-pbr-tracking-non-snat": false,
+    "aci-vrf-tenant": "common",
+    "aci-l3out": "k8s21",
+    "aci-ext-networks": [
+        "k8s21_net"
+    ],
+    "aci-vrf": "k8s21_vrf",
+    "default-endpoint-group": {
+        "policy-space": "kent_cluster",
+        "name": "aci-containers-kent_cluster|aci-containers-default"
+    },
+    "max-nodes-svc-graph": 32,
+    "namespace-default-endpoint-group": {
+        "aci-containers-system": {
+            "policy-space": "kent_cluster",
+            "name": "aci-containers-kent_cluster|aci-containers-system"
+        },
+        "istio-operator": {
+            "policy-space": "kent_cluster",
+            "name": "aci-containers-kent_cluster|aci-containers-istio"
+        },
+        "istio-system": {
+            "policy-space": "kent_cluster",
+            "name": "aci-containers-kent_cluster|aci-containers-istio"
+        },
+        "kube-system": {
+            "policy-space": "kent_cluster",
+            "name": "aci-containers-kent_cluster|aci-containers-system"
+        }        },
+    "service-ip-pool": [
+        {
+            "end": "10.3.0.254",
+            "start": "10.3.0.2"
+        }
+    ],
+    "snat-contract-scope": "global",
+    "static-service-ip-pool": [
+        {
+            "end": "10.4.0.254",
+            "start": "10.4.0.2"
+        }
+    ],
+    "pod-ip-pool": [
+        {
+            "end": "10.2.255.254",
+            "start": "10.2.0.2"
+        }
+    ],
+    "pod-subnet-chunk-size": 32,
+    "node-service-ip-pool": [
+        {
+            "end": "10.5.0.254",
+            "start": "10.5.0.2"
+        }
+    ],
+    "node-service-subnets": [
+        "10.5.0.1/24"
+    ]
+}
