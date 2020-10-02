@@ -172,6 +172,7 @@
   - name: Delete extra Master EPGs
     vars:
       epgPath: 'uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epgName }}'
+    ignore_errors: yes
     cisco.aci.aci_epg_to_contract_master:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
@@ -190,6 +191,7 @@
     when: (desiredState == 'present') and (query_result.imdata is defined) and (epgPath in item.fvRsSecInherited.attributes.dn) and (item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] not in masterEpgs)
   - name: Attach Master EPGs
     when: (desiredState == 'present')
+    ignore_errors: yes
     cisco.aci.aci_epg_to_contract_master:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'

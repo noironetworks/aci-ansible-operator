@@ -21,9 +21,7 @@
           - epg9
           - epg10
           - aci-containers-systems
-        provided_contracts:
-          - p1
-          - p3
+        provided_contracts: []
         consumed_contracts:
           - c3
           - c4
@@ -35,7 +33,6 @@
         namespace: '{{ contract_custom_resource.metadata.namespace }}'
       spec:
         allow_list:
-          - protocol: icmp
           - protocol: udp
             ports:
               start: 5001
