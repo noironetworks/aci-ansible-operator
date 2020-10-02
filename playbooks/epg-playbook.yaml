@@ -8,6 +8,7 @@
     user: "{{ jsonVar['apic-username'] }}"
     tenant: "{{ jsonVar['aci-policy-tenant'] }}"
     certKey: "{{ jsonVar['apic-private-key-path'] }}"
+    certName: '{{ user }}.crt'
     vmProvider: "{{ jsonVar['aci-vmm-type'] | lower }}"
     vmmDomain: "{{ jsonVar['aci-vmm-domain'] }}"
     ap: 'aci-containers-{{ prefix }}'
@@ -24,7 +25,7 @@
     aci_epg:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
@@ -42,7 +43,7 @@
       host: '{{ apicHost }}'
       username: '{{ user }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
       epg: '{{ epgName }}'
@@ -62,7 +63,7 @@
     aci_epg_to_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
@@ -81,7 +82,7 @@
     aci_epg_to_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
@@ -100,7 +101,7 @@
       host: '{{ apicHost }}'
       username: '{{ user }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
       epg: '{{ epgName }}'
@@ -120,7 +121,7 @@
     aci_epg_to_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
@@ -139,7 +140,7 @@
     aci_epg_to_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
@@ -158,7 +159,7 @@
       host: '{{ apicHost }}'
       username: '{{ user }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       method: get
       use_ssl: yes
       validate_certs: no
@@ -174,7 +175,7 @@
     cisco.aci.aci_epg_to_contract_master:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
@@ -192,7 +193,7 @@
     cisco.aci.aci_epg_to_contract_master:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
@@ -209,7 +210,7 @@
     aci_epg_to_domain:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
-      certificate_name: '{{ tenant }}.crt'
+      certificate_name: '{{ certName }}'
       username: '{{ user }}'
       vm_provider: '{{ vmProvider }}'
       domain: '{{ vmmDomain }}'
