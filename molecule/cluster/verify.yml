@@ -18,9 +18,8 @@
         namespace: '{{ epg_custom_resource.metadata.namespace }}'
       spec:
         epg_contract_masters:
-          - epg9
-          - epg10
-          - aci-containers-systems
+          - aci-containers-istio
+          - aci-containers-system
         provided_contracts: []
         consumed_contracts:
           - c3
