@@ -5,7 +5,7 @@
   vars:
     jsonVar: "{{ lookup('file', '/opt/ansible/aci-containers-config/controller-config') | from_json }}"
     user: "{{ jsonVar['apic-username'] }}"
-    tenant: "{{ jsonVar['apic-username'] }}"
+    tenant: "{{ jsonVar['aci-policy-tenant'] }}"
     certKey: "{{ jsonVar['apic-private-key-path'] }}"
     certName: '{{ user }}.crt'
     apicHosts: "{{ jsonVar['apic-hosts'] }}"
