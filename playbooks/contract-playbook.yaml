@@ -13,23 +13,24 @@
     contractName: '{{ meta.name }}'
     allowList: '{{ allow_list }}'
     desiredState: '{{ state }}'
+    annotation: 'orchestrator:aci-ansible-operator'
   tasks:
   - name: Create/Delete a contract
-    aci_contract:
+    cisco.aci.aci_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       contract: '{{ contractName }}'
-      # TBD: annotation
+      annotation: '{{ annotation }}'
       use_ssl: yes
       validate_certs: no
       use_proxy: no
       state: '{{ desiredState }}'
   - name: Create a subject
     when: desiredState == 'present'
-    aci_contract_subject:
+    cisco.aci.aci_contract_subject:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -37,25 +38,27 @@
       tenant: '{{ tenant }}'
       contract: '{{ contractName }}'
       subject: 'default'
+      annotation: '{{ annotation }}'
       use_ssl: yes
       validate_certs: no
       use_proxy: no
       state: present
   - name: Create/Delete a filter
-    aci_filter:
+    cisco.aci.aci_filter:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
       username: '{{ user }}'
       tenant: '{{ tenant }}'
       filter: '{{ contractName }}-default'
+      annotation: '{{ annotation }}'
       use_ssl: yes
       validate_certs: no
       use_proxy: no
       state: '{{ desiredState }}'
   - name: Query entries
     when: desiredState == 'present'
-    aci_filter_entry:
+    cisco.aci.aci_filter_entry:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -67,23 +70,44 @@
       use_proxy: no
       state: query
     register: query_result
+  - name: Query each entry to get its annotation
+    cisco.aci.aci_filter_entry:
+      host: '{{ apicHost }}'
+      cert_key: '{{ certKey }}'
+      certificate_name: '{{ certName }}'
+      username: '{{ user }}'
+      tenant: '{{ tenant }}'
+      filter: '{{ contractName }}-default'
+      entry: '{{ item.vzEntry.attributes.name }}'
+      use_ssl: yes
+      validate_certs: no
+      use_proxy: no
+      state: query
+    with_items: "{{ query_result.current[0].vzFilter.children }}"
+    when: (desiredState == 'present') and (query_result.current[0].vzFilter.children is defined)
+    register: entry_query_result
   - name: Set the default entry list
     when: desiredState == 'present'
     set_fact:
       entryList: []
   - name: Set the entry list
     set_fact:
-      entryList: "{{ entryList|default([]) + ['-'.join((item.protocol, item.ports.start|string(), item.ports.end|string()))] }}"
+      entryList: "{{ entryList + ['-'.join((item.protocol, item.ports.start|string(), item.ports.end|string()))] }}"
     with_items: "{{ allowList }}"
     when: (desiredState == 'present') and (item.ports is defined)
   - name: Set the entry list for ICMP
     set_fact:
-      entryList: "{{ entryList|default([]) + ['-'.join((item.protocol, 'unspecified', 'unspecified'))] }}"
+      entryList: "{{ entryList + ['-'.join((item.protocol, 'unspecified', 'unspecified'))] }}"
     with_items: "{{ allowList }}"
     when: (desiredState == 'present') and (item.ports is not defined)
+  - name: Add the entries not owned by us to the entry list
+    set_fact:
+      entryList: "{{ entryList + [item.item.vzEntry.attributes.name] }}"
+    with_items: "{{ entry_query_result.results }}"
+    when: (desiredState == 'present') and (entry_query_result.results is defined) and (item.item.vzEntry.attributes.annotation != annotation)
   - name: Delete extra entries
     ignore_errors: yes
-    aci_filter_entry:
+    cisco.aci.aci_filter_entry:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -98,7 +122,7 @@
     with_items: "{{ query_result.current[0].vzFilter.children }}"
     when: (desiredState == 'present') and (query_result.current[0].vzFilter.children is defined) and (item.vzEntry.attributes.name not in entryList)
   - name: Create entries
-    aci_filter_entry:
+    cisco.aci.aci_filter_entry:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -106,6 +130,7 @@
       tenant: '{{ tenant }}'
       filter: '{{ contractName }}-default'
       entry: "{{ '-'.join((item.protocol, item.ports.start|string(), item.ports.end|string())) }}"
+      annotation: '{{ annotation }}'
       ether_type: 'ip'
       ip_protocol: '{{ item.protocol }}'
       dst_port_start: '{{ item.ports.start }}'
@@ -117,7 +142,7 @@
     with_items: "{{ allowList }}"
     when: (desiredState == 'present') and (item.ports is defined)
   - name: Create entries for ICMP which doesn't have ports defined
-    aci_filter_entry:
+    cisco.aci.aci_filter_entry:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -125,6 +150,7 @@
       tenant: '{{ tenant }}'
       filter: '{{ contractName }}-default'
       entry: "{{ '-'.join((item.protocol, 'unspecified', 'unspecified')) }}"
+      annotation: '{{ annotation }}'
       ether_type: 'ip'
       ip_protocol: '{{ item.protocol }}'
       use_ssl: yes
@@ -135,7 +161,7 @@
     when: (desiredState == 'present') and (item.ports is not defined)
   - name: Bind the subject to the filter
     when: desiredState == 'present'
-    aci_contract_subject_to_filter:
+    cisco.aci.aci_contract_subject_to_filter:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -144,6 +170,7 @@
       contract: '{{ contractName }}'
       subject: 'default'
       filter: '{{ contractName }}-default'
+      annotation: '{{ annotation }}'
       use_ssl: yes
       validate_certs: no
       use_proxy: no
