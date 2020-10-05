@@ -20,9 +20,11 @@
     providedContracts: '{{ provided_contracts }}'
     consumedContracts: '{{ consumed_contracts }}'
     desiredState: '{{ state }}'
+    annotation: 'orchestrator:aci-ansible-operator'
+    epgPath: 'uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epgName }}'
   tasks:
-  - name: create EPG
-    aci_epg:
+  - name: Create/Delete the EPG
+    cisco.aci.aci_epg:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -31,7 +33,7 @@
       ap: '{{ ap }}'
       epg: '{{ epgName }}'
       bd: '{{ bd }}'
-      # TBD: annotation?
+      annotation: '{{ annotation }}'
       use_ssl: yes
       validate_certs: no
       use_proxy: no
@@ -39,7 +41,7 @@
   - name: Query all the provided contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
-    aci_epg_to_contract:
+    cisco.aci.aci_epg_to_contract:
       host: '{{ apicHost }}'
       username: '{{ user }}'
       cert_key: '{{ certKey }}'
@@ -57,10 +59,38 @@
   - debug:
       msg: 'Provider contract name {{ item.fvRsProv.attributes.tnVzBrCPName }}'
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
-    when: query_result.current[0].fvAEPg.children is defined
+    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined)
+  - name: Query each provided contract to get its annotation
+    ignore_errors: yes
+    cisco.aci.aci_epg_to_contract:
+      host: '{{ apicHost }}'
+      username: '{{ user }}'
+      cert_key: '{{ certKey }}'
+      certificate_name: '{{ certName }}'
+      tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract: '{{ item.fvRsProv.attributes.tnVzBrCPName }}'
+      contract_type: provider
+      use_ssl: yes
+      validate_certs: no
+      use_proxy: no
+      state: query
+    with_items: "{{ query_result.current[0].fvAEPg.children }}"
+    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined)
+    register: contract_query_result
+  - name: Set the provided contract list
+    when: desiredState == 'present'
+    set_fact:
+      providedContractList: '{{ providedContracts }}'
+  - name: Add the provided contracts not owned by us to the list
+    set_fact:
+      providedContractList: "{{ providedContractList + [item.item.fvRsProv.attributes.tnVzBrCPName] }}"
+    with_items: "{{ contract_query_result.results }}"
+    when: (desiredState == 'present') and (contract_query_result.results is defined) and (item.item.fvRsProv.attributes.annotation != annotation)
   - name: Delete the extra provided contracts to EPG
     ignore_errors: yes
-    aci_epg_to_contract:
+    cisco.aci.aci_epg_to_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -75,11 +105,11 @@
       use_ssl: yes
       validate_certs: no
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
-    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined) and (item.fvRsProv.attributes.tnVzBrCPName not in providedContracts)
+    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined) and (item.fvRsProv.attributes.tnVzBrCPName not in providedContractList)
   - name: Add provided contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
-    aci_epg_to_contract:
+    cisco.aci.aci_epg_to_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -89,6 +119,7 @@
       epg: '{{ epgName }}'
       contract: '{{ item }}'
       contract_type: provider
+      annotation: '{{ annotation }}'
       state: present
       use_proxy: no
       use_ssl: yes
@@ -97,7 +128,7 @@
   - name: Query all the consumed contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
-    aci_epg_to_contract:
+    cisco.aci.aci_epg_to_contract:
       host: '{{ apicHost }}'
       username: '{{ user }}'
       cert_key: '{{ certKey }}'
@@ -115,10 +146,38 @@
   - debug:
       msg: 'Consumer contract name {{ item.fvRsCons.attributes.tnVzBrCPName }}'
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
-    when: query_result.current[0].fvAEPg.children is defined
+    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined)
+  - name: Query each consumed contract to get its annotation
+    ignore_errors: yes
+    cisco.aci.aci_epg_to_contract:
+      host: '{{ apicHost }}'
+      username: '{{ user }}'
+      cert_key: '{{ certKey }}'
+      certificate_name: '{{ certName }}'
+      tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract: '{{ item.fvRsCons.attributes.tnVzBrCPName }}'
+      contract_type: consumer
+      use_ssl: yes
+      validate_certs: no
+      use_proxy: no
+      state: query
+    with_items: "{{ query_result.current[0].fvAEPg.children }}"
+    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined)
+    register: contract_query_result
+  - name: Set the consumed contract list
+    when: desiredState == 'present'
+    set_fact:
+      consumedContractList: '{{ consumedContracts }}'
+  - name: Add the consumed contracts not owned by us to the list
+    set_fact:
+      consumedContractList: "{{ consumedContractList + [item.item.fvRsCons.attributes.tnVzBrCPName] }}"
+    with_items: "{{ contract_query_result.results }}"
+    when: (desiredState == 'present') and (contract_query_result.results is defined) and (item.item.fvRsCons.attributes.annotation != annotation)
   - name: Delete the extra consumed contracts to EPG
     ignore_errors: yes
-    aci_epg_to_contract:
+    cisco.aci.aci_epg_to_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -133,11 +192,11 @@
       use_ssl: yes
       validate_certs: no
     with_items: '{{ query_result.current[0].fvAEPg.children }}'
-    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined) and (item.fvRsCons.attributes.tnVzBrCPName not in consumedContracts)
+    when: (desiredState == 'present') and (query_result.current[0].fvAEPg.children is defined) and (item.fvRsCons.attributes.tnVzBrCPName not in consumedContractList)
   - name: Add consumed contracts to EPG
     when: desiredState == 'present'
     ignore_errors: yes
-    aci_epg_to_contract:
+    cisco.aci.aci_epg_to_contract:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -147,6 +206,7 @@
       epg: '{{ epgName }}'
       contract: '{{ item }}'
       contract_type: consumer
+      annotation: '{{ annotation }}'
       state: present
       use_proxy: no
       use_ssl: yes
@@ -155,7 +215,7 @@
   - name: Query Master EPGs
     when: desiredState == 'present'
     ignore_errors: yes
-    aci_rest:
+    cisco.aci.aci_rest:
       host: '{{ apicHost }}'
       username: '{{ user }}'
       cert_key: '{{ certKey }}'
@@ -168,10 +228,36 @@
   - debug:
       msg: '{{ item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] }}'
     with_items: '{{ query_result.imdata }}'
-    when: query_result.imdata is defined
+    when: (desiredState == 'present') and (query_result.imdata is defined)
+  - name: Query each master EPG to get its annotation
+    ignore_errors: yes
+    cisco.aci.aci_epg_to_contract_master:
+      host: '{{ apicHost }}'
+      username: '{{ user }}'
+      cert_key: '{{ certKey }}'
+      certificate_name: '{{ certName }}'
+      tenant: '{{ tenant }}'
+      ap: '{{ ap }}'
+      epg: '{{ epgName }}'
+      contract_master_ap: '{{ ap }}'
+      contract_master_epg: '{{ item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] }}'
+      use_ssl: yes
+      validate_certs: no
+      use_proxy: no
+      state: query
+    with_items: "{{ query_result.imdata }}"
+    when: (desiredState == 'present') and (query_result.imdata is defined) and (epgPath in item.fvRsSecInherited.attributes.dn)
+    register: master_query_result
+  - name: Set the master EPG list
+    when: desiredState == 'present'
+    set_fact:
+      masterEpgList: '{{ masterEpgs }}'
+  - name: Add the master EPGs not owned by us to the list
+    set_fact:
+      masterEpgList: "{{ masterEpgList + [item.item.fvRsSecInherited.attributes.tDn.split('/')[-1][4:]] }}"
+    with_items: "{{ master_query_result.results }}"
+    when: (desiredState == 'present') and (master_query_result.results is defined) and (epgPath in item.item.fvRsSecInherited.attributes.dn) and (item.item.fvRsSecInherited.attributes.annotation != annotation)
   - name: Delete extra Master EPGs
-    vars:
-      epgPath: 'uni/tn-{{ tenant }}/ap-{{ ap }}/epg-{{ epgName }}'
     ignore_errors: yes
     cisco.aci.aci_epg_to_contract_master:
       host: '{{ apicHost }}'
@@ -188,7 +274,7 @@
       use_ssl: yes
       validate_certs: no
     with_items: '{{ query_result.imdata }}'
-    when: (desiredState == 'present') and (query_result.imdata is defined) and (epgPath in item.fvRsSecInherited.attributes.dn) and (item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] not in masterEpgs)
+    when: (desiredState == 'present') and (query_result.imdata is defined) and (epgPath in item.fvRsSecInherited.attributes.dn) and (item.fvRsSecInherited.attributes.tDn.split("/")[-1][4:] not in masterEpgList)
   - name: Attach Master EPGs
     when: (desiredState == 'present')
     cisco.aci.aci_epg_to_contract_master:
@@ -201,6 +287,7 @@
       epg: '{{ epgName }}'
       contract_master_ap: '{{ ap }}'
       contract_master_epg: '{{ item }}'
+      annotation: '{{ annotation }}'
       state: present
       use_proxy: no
       use_ssl: yes
@@ -208,7 +295,7 @@
     loop: '{{ masterEpgs }}'
   - name: Bind EPG to VMM Domain
     when: desiredState == 'present'
-    aci_epg_to_domain:
+    cisco.aci.aci_epg_to_domain:
       host: '{{ apicHost }}'
       cert_key: '{{ certKey }}'
       certificate_name: '{{ certName }}'
@@ -219,6 +306,7 @@
       tenant: '{{ tenant }}'
       ap: '{{ ap }}'
       epg: '{{ epgName }}'
+      annotation: '{{ annotation }}'
       state: present
       use_proxy: no
       use_ssl: yes
