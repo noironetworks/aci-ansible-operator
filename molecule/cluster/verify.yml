@@ -41,7 +41,7 @@
               start: 5002
               end: 5002
 
-    jsonVar: "{{ lookup('file', '/'.join([cluster_dir, 'controller-config'])) | from_json }}"
+    jsonVar: "{{ lookup('file', '/'.join([cluster_conf_dir, 'controller-config'])) | from_json }}"
     user: admin
     passwd: noir0123
     prefix: "{{ jsonVar['aci-prefix'] }}"

@@ -36,7 +36,7 @@ provisioner:
         ansible_python_interpreter: '{{ ansible_playbook_python }}'
         template_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/templates
         deploy_dir: ${MOLECULE_PROJECT_DIRECTORY}/deploy
-        cluster_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/cluster
+        cluster_conf_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/cluster/config
         local_config_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/test-local/config
   env:
     K8S_AUTH_KUBECONFIG: ${MOLECULE_EPHEMERAL_DIRECTORY}/kubeconfig
