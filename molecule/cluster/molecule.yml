@@ -24,12 +24,13 @@ provisioner:
         ansible_python_interpreter: '{{ ansible_playbook_python }}'
         deploy_dir: ${MOLECULE_PROJECT_DIRECTORY}/deploy
         template_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/templates
-        cluster_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/cluster
+        cluster_conf_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/cluster/config
         # TBD: use the official repo
         operator_image: ${OPERATOR_IMAGE:-"kentwu111/aci-ansible-operator:v1"}
         operator_pull_policy: ${OPERATOR_PULL_POLICY:-"Always"}
   env:
-    K8S_AUTH_KUBECONFIG: ${KUBECONFIG:-"~/.kube/config"}
+    #K8S_AUTH_KUBECONFIG: ${KUBECONFIG:-"~/.kube/config"}
+    K8S_AUTH_KUBECONFIG: ${MOLECULE_PROJECT_DIRECTORY}/molecule/cluster/config/kubeconfig
 verifier:
   name: ansible
   lint: |
