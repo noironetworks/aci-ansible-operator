@@ -1,3 +1,17 @@
 ---
 - import_playbook: ../default/prepare.yml
 - import_playbook: ../cluster/prepare.yml
+- name: Prepare
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  no_log: "{{ molecule_no_log }}"
+
+  tasks:
+    - name: Deploy the aci-controller-config ConfigMap and aci-user-cert Secret
+      k8s:
+        definition: "{{ lookup('template', '/'.join([local_config_dir, item])) }}"
+        namespace: '{{ namespace }}'
+      with_items:
+        - aci_controller_config.yaml
+        - aci_user_cert.yaml
