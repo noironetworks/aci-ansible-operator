@@ -102,6 +102,23 @@
         use_proxy: no
         state: present
 
+    # Add a master EPG without the annotaion, which means it won't
+    # be managed by the oeprator so it should always be there.
+    - name: Create the extra master EPG
+      cisco.aci.aci_epg_to_contract_master:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        ap: '{{ ap }}'
+        epg: '{{ epg_custom_resource.metadata.name }}'
+        contract_master_ap: '{{ ap }}'
+        contract_master_epg: aci-containers-nodes
+        state: present
+        use_proxy: no
+        use_ssl: yes
+        validate_certs: no
+
     - name: Query all the provided contracts to EPG
       aci_epg_to_contract:
         host: '{{ apicHost }}'
@@ -162,23 +179,6 @@
       assert:
         that: cContractList | sort == (epg_custom_resource.spec.consumed_contracts + ['extra-consumer-contract']) | sort
 
-    # Add a master EPG without the annotaion, which means it won't
-    # be managed by the oeprator so it should always be there.
-    - name: Create the extra master EPG
-      cisco.aci.aci_epg_to_contract_master:
-        host: '{{ apicHost }}'
-        username: '{{ user }}'
-        password: '{{ passwd }}'
-        tenant: '{{ tenant }}'
-        ap: '{{ ap }}'
-        epg: '{{ epg_custom_resource.metadata.name }}'
-        contract_master_ap: '{{ ap }}'
-        contract_master_epg: aci-containers-nodes
-        state: present
-        use_proxy: no
-        use_ssl: yes
-        validate_certs: no
-
     - name: Query Master EPGs
       aci_rest:
         host: '{{ apicHost }}'
@@ -219,7 +219,7 @@
           reason: Running
           status: "True"
     # Wait for the update to be deployed to APIC
-    - pause: seconds=60
+    - pause: seconds=90
     - name: Reset the empty lists
       set_fact:
         pContractList: []
