@@ -71,6 +71,37 @@
         cContractList: []
         contractMasterList: []
 
+    # Add 2 contracts without the annotaion, which means they won't
+    # be managed by the oeprator so they should always be there.
+    - name: Create the extra provider contract
+      aci_epg_to_contract:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        ap: '{{ ap }}'
+        epg: '{{ epg_custom_resource.metadata.name }}'
+        contract_type: provider
+        contract: extra-provider-contract
+        use_ssl: yes
+        validate_certs: no
+        use_proxy: no
+        state: present
+    - name: Create the extra consumer contract
+      aci_epg_to_contract:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        ap: '{{ ap }}'
+        epg: '{{ epg_custom_resource.metadata.name }}'
+        contract_type: consumer
+        contract: extra-consumer-contract
+        use_ssl: yes
+        validate_certs: no
+        use_proxy: no
+        state: present
+
     - name: Query all the provided contracts to EPG
       aci_epg_to_contract:
         host: '{{ apicHost }}'
@@ -99,7 +130,7 @@
         msg: 'pContract list: {{ pContractList }}'
     - name: Contract assertion
       assert:
-        that: pContractList | sort == epg_custom_resource.spec.provided_contracts | sort
+        that: pContractList | sort == (epg_custom_resource.spec.provided_contracts + ['extra-provider-contract']) | sort
 
     - name: Query all the consumed contracts to EPG
       aci_epg_to_contract:
@@ -129,7 +160,24 @@
         msg: 'cContract list: {{ cContractList }}'
     - name: Contract assertion
       assert:
-        that: cContractList | sort == epg_custom_resource.spec.consumed_contracts | sort
+        that: cContractList | sort == (epg_custom_resource.spec.consumed_contracts + ['extra-consumer-contract']) | sort
+
+    # Add a master EPG without the annotaion, which means it won't
+    # be managed by the oeprator so it should always be there.
+    - name: Create the extra master EPG
+      cisco.aci.aci_epg_to_contract_master:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        ap: '{{ ap }}'
+        epg: '{{ epg_custom_resource.metadata.name }}'
+        contract_master_ap: '{{ ap }}'
+        contract_master_epg: aci-containers-nodes
+        state: present
+        use_proxy: no
+        use_ssl: yes
+        validate_certs: no
 
     - name: Query Master EPGs
       aci_rest:
@@ -156,7 +204,7 @@
         msg: 'master EPG list: {{ contractMasterList }}'
     - name: master EPGs assertion
       assert:
-        that: contractMasterList | sort == epg_custom_resource.spec.epg_contract_masters | sort
+        that: contractMasterList | sort == (epg_custom_resource.spec.epg_contract_masters + ['aci-containers-nodes']) | sort
 
     # Test the udpate case
     - name: Update the aci.aw/v1.Epg and wait for reconciliation to complete
@@ -206,7 +254,7 @@
         msg: 'pContract list: {{ pContractList }}'
     - name: Contract assertion
       assert:
-        that: pContractList | sort == new_epg_cr.spec.provided_contracts | sort
+        that: pContractList | sort == (new_epg_cr.spec.provided_contracts + ['extra-provider-contract']) | sort
 
     - name: Query all the consumed contracts to EPG
       aci_epg_to_contract:
@@ -236,7 +284,7 @@
         msg: 'cContract list: {{ cContractList }}'
     - name: Contract assertion
       assert:
-        that: cContractList | sort == new_epg_cr.spec.consumed_contracts | sort
+        that: cContractList | sort == (new_epg_cr.spec.consumed_contracts + ['extra-consumer-contract']) | sort
 
     - name: Query Master EPGs
       aci_rest:
@@ -263,7 +311,7 @@
         msg: 'master EPG list: {{ contractMasterList }}'
     - name: master EPGs assertion
       assert:
-        that: contractMasterList | sort == new_epg_cr.spec.epg_contract_masters | sort
+        that: contractMasterList | sort == (new_epg_cr.spec.epg_contract_masters + ['aci-containers-nodes']) | sort
 
     # Test the delete case
     - name: Delete the aci.aw/v1.Epg
@@ -318,6 +366,23 @@
       assert:
         that: query_result.current != []
 
+    # Add an entry without the annotaion, which means it won't
+    # be managed by the oeprator so it should always be there.
+    - name: Create the extra entry
+      aci_filter_entry:
+        host: '{{ apicHost }}'
+        username: '{{ user }}'
+        password: '{{ passwd }}'
+        tenant: '{{ tenant }}'
+        filter: '{{ contract_custom_resource.metadata.name }}-default'
+        entry: test-entry
+        ether_type: 'ip'
+        ip_protocol: icmp
+        use_ssl: yes
+        validate_certs: no
+        use_proxy: no
+        state: present
+
     - name: Query contract entries
       aci_filter_entry:
         host: '{{ apicHost }}'
@@ -347,7 +412,7 @@
         msg: 'entry list: {{ entryList }}'
     - name: Set the default CRD entry list
       set_fact:
-        crdEntryList: []
+        crdEntryList: ['test-entry']
     - name: Set the tcp/udp CRD entry list
       set_fact:
         crdEntryList: "{{ crdEntryList + ['-'.join((item.protocol, item.ports.start|string(), item.ports.end|string()))] }}"
@@ -424,7 +489,7 @@
         msg: 'entry list: {{ entryList }}'
     - name: Set the default CRD entry list
       set_fact:
-        crdEntryList: []
+        crdEntryList: ['test-entry']
     - name: Set the tcp/udp CRD entry list
       set_fact:
         crdEntryList: "{{ crdEntryList + ['-'.join((item.protocol, item.ports.start|string(), item.ports.end|string()))] }}"
