@@ -3,7 +3,7 @@
   group: aci.aw
   kind: Epg
   playbook: /opt/ansible/playbooks/epg-playbook.yaml
-  reconcilePeriod: 10s
+  reconcilePeriod: 30s
   vars:
     state: present
   finalizer:
@@ -15,7 +15,7 @@
   group: aci.aw
   kind: Contract
   playbook: /opt/ansible/playbooks/contract-playbook.yaml
-  reconcilePeriod: 10s
+  reconcilePeriod: 30s
   vars:
     state: present
   finalizer:
