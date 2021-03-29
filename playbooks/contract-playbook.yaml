@@ -10,7 +10,7 @@
     certName: '{{ user }}.crt'
     apicHosts: "{{ jsonVar['apic-hosts'] }}"
     apicHost: "{{ apicHosts | random }}"
-    contractName: '{{ meta.name }}'
+    contractName: '{{ ansible_operator_meta.name }}'
     allowList: '{{ allow_list }}'
     desiredState: '{{ state }}'
     annotation: 'orchestrator:aci-ansible-operator'

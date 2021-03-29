@@ -29,7 +29,7 @@ spec:
       containers:
         - name: aci-ansible-operator
           # TBD: use official repo
-          image: "kentwu111/aci-ansible-operator:v1"
+          image: "noirolabs/apoorva:version_comp_test_1"
           imagePullPolicy: "Always"
           volumeMounts:
           - mountPath: /tmp/ansible-operator/runner
