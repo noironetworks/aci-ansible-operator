@@ -1,5 +1,4 @@
-# TBD: Use version v1 once the subresource status is supported in v1
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: epgs.aci.aw
@@ -11,30 +10,30 @@ spec:
     plural: epgs
     singular: epg
   scope: Namespaced
-  subresources:
-    status: {}
   versions:
   - name: v1
+    schema:
+      openAPIV3Schema:
+        description: "ACI CNI EPG"
+        type: object
+        properties:
+          spec:
+            required: ["epg_contract_masters", "provided_contracts", "consumed_contracts"]
+            type: object
+            properties:
+              epg_contract_masters:
+                type: array
+                items:
+                  type: string
+              provided_contracts:
+                type: array
+                items:
+                  type: string
+              consumed_contracts:
+                type: array
+                items:
+                  type: string
     served: true
     storage: true
-  validation:
-    openAPIV3Schema:
-      description: "ACI CNI EPG"
-      type: object
-      properties:
-        spec:
-          required: ["epg_contract_masters", "provided_contracts", "consumed_contracts"]
-          type: object
-          properties:
-            epg_contract_masters:
-              type: array
-              items:
-                type: string
-            provided_contracts:
-              type: array
-              items:
-                type: string
-            consumed_contracts:
-              type: array
-              items:
-                type: string
+    subresources:
+      status: {}

@@ -15,7 +15,7 @@
     bd: 'aci-containers-{{ prefix }}-pod-bd'
     apicHosts: "{{ jsonVar['apic-hosts'] }}"
     apicHost: "{{ apicHosts | random }}"
-    epgName: '{{ meta.name }}'
+    epgName: '{{ ansible_operator_meta.name }}'
     masterEpgs: '{{ epg_contract_masters }}'
     providedContracts: '{{ provided_contracts }}'
     consumedContracts: '{{ consumed_contracts }}'
