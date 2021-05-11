@@ -26,7 +26,7 @@ provisioner:
         template_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/templates
         cluster_conf_dir: ${MOLECULE_PROJECT_DIRECTORY}/molecule/cluster/config
         # TBD: use the official repo
-        operator_image: ${OPERATOR_IMAGE:-"kentwu111/aci-ansible-operator:v1"}
+        operator_image: ${OPERATOR_IMAGE:-"noirolabs/vishal:molecule"}
         operator_pull_policy: ${OPERATOR_PULL_POLICY:-"Always"}
   env:
     #K8S_AUTH_KUBECONFIG: ${KUBECONFIG:-"~/.kube/config"}
